@@ -140,10 +140,8 @@ class TextSpanEditingController extends TextEditingController {
       }
     }
 
-    print(text);
     List<InlineSpan> copy =
         updateSpans(initialText, (_textSpan.children) ?? <InlineSpan>[], text);
-    print(copy);
     return TextSpan(
       style: style,
       children: copy,
