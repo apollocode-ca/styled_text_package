@@ -272,13 +272,14 @@ class _DemoPageState extends State<DemoPage> {
 //                 ),
 
 //                 const Divider(height: 40),
-
+              Text(text),
                 // Editable text
                 StyledText.editable(
                   text: text,
                   showCursor: true,
                   onChange: (value) {
                     setState(() {
+                      print(value);
                       text = value;
                     });
                   },

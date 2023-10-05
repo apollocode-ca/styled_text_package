@@ -540,15 +540,12 @@ class _StyledTextState extends State<StyledText> {
         original.substring(position);
   }
 
-  String deleteCharAtPosition(String original, int position) {
-    // Check if the position is valid
-    if (position < 0 || position >= original.length) {
-      throw ArgumentError('Position is out of bounds');
-    }
-
-    // Delete the character at the specified position
-    return original.substring(0, position) + original.substring(position + 1);
+String deleteCharsAtPosition(String original, int position, int count) {
+  if (position < 0 || position >= original.length || count < 0 || position + count > original.length) {
+    throw ArgumentError('Invalid position or count');
   }
+  return original.substring(0, position) + original.substring(position + count);
+}
 
   String buildBackToString(List<TextSpan> spans) {
     String result = '';
@@ -569,6 +566,12 @@ class _StyledTextState extends State<StyledText> {
 
       _controller!.addListener(() {
         var newStringIndex = _controller!.selection.extentOffset;
+        var selectionWidth =
+            _controller!.selection.end - _controller!.selection.start;
+        if (selectionWidth == 0) {
+          selectionWidth = 1;
+        }
+        print(selectionWidth);
         var originalIndex =
             mapIndex(newStringIndex, originalText!, originalTextWithTags);
         var diff = stringDifference(originalText!, _controller!.text);
@@ -577,15 +580,18 @@ class _StyledTextState extends State<StyledText> {
 
         if (operation == 1) {
           originalTextWithTags = insertCharAtPosition(
-              originalTextWithTags, originalStringModified, originalIndex);
+              originalTextWithTags, originalStringModified, originalIndex - 1);
+          originalText = insertCharAtPosition(
+              originalText!, originalStringModified, newStringIndex - 1);
         } else if (operation == -1) {
-          originalTextWithTags =
-              deleteCharAtPosition(originalTextWithTags, originalIndex);
+          originalTextWithTags = deleteCharsAtPosition(
+              originalTextWithTags, originalIndex, selectionWidth);
+          originalText = deleteCharsAtPosition(
+              originalText!, newStringIndex, selectionWidth);
         }
 
         if (operation != 0 && widget.onChange != null) {
           widget.onChange!(originalTextWithTags);
-          print("RESULT:" + originalTextWithTags.toString());
         }
       });
     }
