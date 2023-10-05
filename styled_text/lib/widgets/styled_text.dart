@@ -281,6 +281,7 @@ class StyledText extends StatefulWidget {
     GestureTapCallback? onTap,
     ScrollPhysics? scrollPhysics,
     String? semanticsLabel,
+    required this.onChange,
   })  : this.tags = tags ?? const {},
         this.selectable = false,
         this.editable = true,
@@ -311,7 +312,6 @@ class StyledText extends StatefulWidget {
         this._onTap = onTap,
         this._scrollPhysics = scrollPhysics,
         this._semanticsLabel = semanticsLabel,
-        this.onChange = null,
         super(key: key);
 
   final FocusNode? _focusNode;

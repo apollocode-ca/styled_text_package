@@ -18,8 +18,15 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class DemoPage extends StatelessWidget {
+class DemoPage extends StatefulWidget {
   DemoPage({super.key});
+
+  @override
+  State<DemoPage> createState() => _DemoPageState();
+}
+
+class _DemoPageState extends State<DemoPage> {
+  String text = 'Test: editable <b>bold</b> text.';
 
   void _alert(BuildContext context, {String text = 'Tapped'}) {
     showDialog<void>(
@@ -112,7 +119,7 @@ class DemoPage extends StatelessWidget {
 //                 const SizedBox(height: 20),
 //                 StyledText(
 //                   newLineAsBreaks: false,
-//                   text: """Multiline text 
+//                   text: """Multiline text
 // (wo breaks)""",
 //                   tags: {
 //                     'b': StyledTextTag(
@@ -268,8 +275,13 @@ class DemoPage extends StatelessWidget {
 
                 // Editable text
                 StyledText.editable(
-                  text: 'Test: editable <b>bold</b> text.',
+                  text: text,
                   showCursor: true,
+                  onChange: (value) {
+                    setState(() {
+                      text = value;
+                    });
+                  },
                   tags: {
                     'b': StyledTextTag(
                       style: const TextStyle(fontWeight: FontWeight.bold),
