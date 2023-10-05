@@ -13,13 +13,19 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.teal,
       ),
-      home: const DemoPage(),
+      home: DemoPage(),
     );
   }
 }
 
 class DemoPage extends StatelessWidget {
-  const DemoPage({super.key});
+  final TextSpanEditingController _controller = TextSpanEditingController(
+      textSpan: TextSpan(children: [
+    TextSpan(text: 'Test: editable '),
+    TextSpan(text: 'bold', style: const TextStyle(fontWeight: FontWeight.bold)),
+    TextSpan(text: ' text.'),
+  ]));
+  DemoPage({super.key});
 
   void _alert(BuildContext context, {String text = 'Tapped'}) {
     showDialog<void>(
@@ -257,6 +263,20 @@ class DemoPage extends StatelessWidget {
                 // Selectable text
                 StyledText.selectable(
                   text: 'Test: selectable <b>bold</b> text.',
+                  tags: {
+                    'b': StyledTextTag(
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  },
+                ),
+
+                const Divider(height: 40),
+
+                // Editable text
+                StyledText.editable(
+                  controller: _controller!,
+                  text: 'Test: editable <b>bold</b> text.',
+                  showCursor: true,
                   tags: {
                     'b': StyledTextTag(
                       style: const TextStyle(fontWeight: FontWeight.bold),

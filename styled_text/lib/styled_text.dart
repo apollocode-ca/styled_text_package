@@ -7,6 +7,7 @@ export 'tags/styled_text_tag_custom.dart';
 export 'tags/styled_text_tag_icon.dart';
 export 'tags/styled_text_tag_widget.dart';
 export 'tags/styled_text_tag_widget_builder.dart';
+export 'package:styled_text/builders/custom_selectable_text.dart';
 
 export 'widgets/styled_text.dart';
 export 'widgets/custom_styled_text.dart';

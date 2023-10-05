@@ -11,6 +11,7 @@ environment:
   flutter: ">=3.7.0"
 
 dependencies:
+  diff_match_patch: ^0.4.1
   flutter:
     sdk: flutter
   xmlstream: ^1.0.0
