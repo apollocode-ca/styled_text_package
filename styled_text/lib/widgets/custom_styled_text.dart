@@ -2,8 +2,7 @@ import 'dart:collection';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:styled_text/tags/styled_text_tag_base.dart';
-import 'package:styled_text/widgets/styled_text.dart';
+import 'package:styled_text/styled_text.dart';
 import 'package:xmlstream/xmlstream.dart';
 
 /// The builder callback for the [CustomStyledText] widget.
@@ -207,6 +206,7 @@ class _CustomStyledTextState extends State<CustomStyledText> {
       if (mounted) {
         final span = node.createSpan(context: context);
         _textSpans = TextSpan(children: [span]);
+        // _controller = TextSpanEditingController(textSpan: _textSpans!);
         setState(() {});
       } else {
         _textSpans = null;
@@ -230,7 +230,6 @@ class _CustomStyledTextState extends State<CustomStyledText> {
       style: effectiveTextStyle,
       children: [_textSpans!],
     );
-
     return widget.builder.call(context, span);
   }
 }

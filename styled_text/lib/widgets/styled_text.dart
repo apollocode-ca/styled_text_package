@@ -1,5 +1,6 @@
 import 'dart:ui' as ui show TextHeightBehavior, BoxHeightStyle, BoxWidthStyle;
 
+import 'package:diff_match_patch/diff_match_patch.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -30,7 +31,7 @@ import 'custom_styled_text.dart';
 ///
 /// * [TextStyle], which discusses how to style text.
 ///
-class StyledText extends StatelessWidget {
+class StyledText extends StatefulWidget {
   /// The text to display in this widget. The text must be valid xml.
   ///
   /// Tag attributes must be enclosed in double quotes.
@@ -58,8 +59,7 @@ class StyledText extends StatelessWidget {
   /// Is text editable?
   final bool editable;
 
-  /// The controller to use for an editable text.
-  final TextSpanEditingController? controller;
+  final Function(String value)? onChange;
 
   /// Default text style.
   final TextStyle? style;
@@ -163,13 +163,13 @@ class StyledText extends StatelessWidget {
         this._onTap = null,
         this._scrollPhysics = null,
         this._semanticsLabel = null,
-        this.controller = null,
+        this.onChange = null,
         super(key: key);
 
   /// Create a selectable text widget with formatting via tags.
   ///
   /// See [SelectableText.rich] for more options.
-  const StyledText.selectable({
+  StyledText.selectable({
     Key? key,
     required this.text,
     this.newLineAsBreaks = false,
@@ -237,16 +237,15 @@ class StyledText extends StatelessWidget {
         this._onTap = onTap,
         this._scrollPhysics = scrollPhysics,
         this._semanticsLabel = semanticsLabel,
-        this.controller = null,
+        this.onChange = null,
         super(key: key);
 
   /// Create an editable text widget with formatting via tags.
   ///
   /// See [EditableText] for more options.
-  const StyledText.editable({
+  StyledText.editable({
     Key? key,
     required this.text,
-    required this.controller,
     this.newLineAsBreaks = false,
     this.style,
     Map<String, StyledTextTagBase>? tags,
@@ -312,6 +311,7 @@ class StyledText extends StatelessWidget {
         this._onTap = onTap,
         this._scrollPhysics = scrollPhysics,
         this._semanticsLabel = semanticsLabel,
+        this.onChange = null,
         super(key: key);
 
   final FocusNode? _focusNode;
@@ -343,22 +343,34 @@ class StyledText extends StatelessWidget {
     );
   }
 
+  @override
+  State<StyledText> createState() => _StyledTextState();
+}
+
+class _StyledTextState extends State<StyledText> {
+  TextSpanEditingController? _controller;
+  String? originalText;
+  late String originalTextWithTags = widget.text;
+
   Widget _buildText(BuildContext context, TextSpan textSpan) {
     final defaultTextStyle = DefaultTextStyle.of(context);
     final registrar = SelectionContainer.maybeOf(context);
 
     Widget result = RichText(
-      textAlign: textAlign ?? defaultTextStyle.textAlign ?? TextAlign.start,
-      textDirection: textDirection,
-      softWrap: softWrap ?? defaultTextStyle.softWrap,
-      overflow:
-          overflow ?? textSpan.style?.overflow ?? defaultTextStyle.overflow,
-      textScaleFactor: textScaleFactor ?? MediaQuery.textScaleFactorOf(context),
-      maxLines: maxLines ?? defaultTextStyle.maxLines,
-      locale: locale,
-      strutStyle: strutStyle,
-      textWidthBasis: textWidthBasis ?? defaultTextStyle.textWidthBasis,
-      textHeightBehavior: textHeightBehavior ??
+      textAlign:
+          widget.textAlign ?? defaultTextStyle.textAlign ?? TextAlign.start,
+      textDirection: widget.textDirection,
+      softWrap: widget.softWrap ?? defaultTextStyle.softWrap,
+      overflow: widget.overflow ??
+          textSpan.style?.overflow ??
+          defaultTextStyle.overflow,
+      textScaleFactor:
+          widget.textScaleFactor ?? MediaQuery.textScaleFactorOf(context),
+      maxLines: widget.maxLines ?? defaultTextStyle.maxLines,
+      locale: widget.locale,
+      strutStyle: widget.strutStyle,
+      textWidthBasis: widget.textWidthBasis ?? defaultTextStyle.textWidthBasis,
+      textHeightBehavior: widget.textHeightBehavior ??
           defaultTextStyle.textHeightBehavior ??
           DefaultTextHeightBehavior.maybeOf(context),
       text: textSpan,
@@ -381,90 +393,264 @@ class StyledText extends StatelessWidget {
 
     return SelectableText.rich(
       textSpan,
-      focusNode: _focusNode,
-      showCursor: _showCursor,
-      autofocus: _autofocus,
+      focusNode: widget._focusNode,
+      showCursor: widget._showCursor,
+      autofocus: widget._autofocus,
       // ignore: deprecated_member_use
-      toolbarOptions: _toolbarOptions,
-      contextMenuBuilder: _contextMenuBuilder,
-      selectionControls: _selectionControls,
-      selectionHeightStyle: _selectionHeightStyle!,
-      selectionWidthStyle: _selectionWidthStyle!,
-      onSelectionChanged: _onSelectionChanged,
-      magnifierConfiguration: _magnifierConfiguration,
-      cursorWidth: _cursorWidth!,
-      cursorHeight: _cursorHeight,
-      cursorRadius: _cursorRadius,
-      cursorColor: _cursorColor,
-      dragStartBehavior: _dragStartBehavior,
-      enableInteractiveSelection: _enableInteractiveSelection,
-      onTap: _onTap,
-      scrollPhysics: _scrollPhysics,
-      textWidthBasis: textWidthBasis ?? defaultTextStyle.textWidthBasis,
-      textHeightBehavior: textHeightBehavior ??
+      toolbarOptions: widget._toolbarOptions,
+      contextMenuBuilder: widget._contextMenuBuilder,
+      selectionControls: widget._selectionControls,
+      selectionHeightStyle: widget._selectionHeightStyle!,
+      selectionWidthStyle: widget._selectionWidthStyle!,
+      onSelectionChanged: widget._onSelectionChanged,
+      magnifierConfiguration: widget._magnifierConfiguration,
+      cursorWidth: widget._cursorWidth!,
+      cursorHeight: widget._cursorHeight,
+      cursorRadius: widget._cursorRadius,
+      cursorColor: widget._cursorColor,
+      dragStartBehavior: widget._dragStartBehavior,
+      enableInteractiveSelection: widget._enableInteractiveSelection,
+      onTap: widget._onTap,
+      scrollPhysics: widget._scrollPhysics,
+      textWidthBasis: widget.textWidthBasis ?? defaultTextStyle.textWidthBasis,
+      textHeightBehavior: widget.textHeightBehavior ??
           defaultTextStyle.textHeightBehavior ??
           DefaultTextHeightBehavior.maybeOf(context),
-      textAlign: textAlign ?? defaultTextStyle.textAlign ?? TextAlign.start,
-      textDirection: textDirection,
+      textAlign:
+          widget.textAlign ?? defaultTextStyle.textAlign ?? TextAlign.start,
+      textDirection: widget.textDirection,
       // softWrap
       // overflow
-      textScaleFactor: textScaleFactor ?? MediaQuery.textScaleFactorOf(context),
-      maxLines: maxLines ?? defaultTextStyle.maxLines,
+      textScaleFactor:
+          widget.textScaleFactor ?? MediaQuery.textScaleFactorOf(context),
+      maxLines: widget.maxLines ?? defaultTextStyle.maxLines,
       // locale
-      strutStyle: strutStyle,
-      semanticsLabel: _semanticsLabel,
+      strutStyle: widget.strutStyle,
+      semanticsLabel: widget._semanticsLabel,
     );
+  }
+
+  /// Obtains the last children of a text span.
+  List<TextSpan> getLastChildren(TextSpan parent) {
+    List<TextSpan> results = [];
+    final children = parent.children;
+    if (children == null || children.isEmpty) {
+      return [parent];
+    }
+
+    for (var child in children) {
+      results.addAll(getLastChildren(child as TextSpan));
+    }
+
+    List<TextSpan> newResults = [];
+
+    for (var result in results) {
+      newResults.add(TextSpan(
+        children: result.children,
+        text: result.text,
+        style: (parent.style ?? TextStyle()).copyWith(
+          color: result.style?.color,
+          backgroundColor: result.style?.backgroundColor,
+          decoration: result.style?.decoration,
+          decorationColor: result.style?.decorationColor,
+          decorationStyle: result.style?.decorationStyle,
+          decorationThickness: result.style?.decorationThickness,
+          fontFamily: result.style?.fontFamily,
+          fontFamilyFallback: result.style?.fontFamilyFallback,
+          fontSize: result.style?.fontSize,
+          fontStyle: result.style?.fontStyle,
+          fontWeight: result.style?.fontWeight,
+          fontFeatures: result.style?.fontFeatures,
+          letterSpacing: result.style?.letterSpacing,
+          wordSpacing: result.style?.wordSpacing,
+          textBaseline: result.style?.textBaseline,
+          height: result.style?.height,
+          locale: result.style?.locale,
+          foreground: result.style?.foreground,
+          background: result.style?.background,
+          shadows: result.style?.shadows,
+          leadingDistribution: result.style?.leadingDistribution,
+          debugLabel: result.style?.debugLabel,
+        ),
+      ));
+    }
+
+    return newResults;
+  }
+
+  int mapIndex(int index, String text, String textWithTags) {
+    int i = 0; // Index for text
+    int j = 0; // Index for textWithTags
+
+    while (i < index && j < textWithTags.length) {
+      if (textWithTags[j] == '<') {
+        // Skip tag
+        while (j < textWithTags.length && textWithTags[j] != '>') {
+          j++;
+        }
+      } else if (i < text.length && text[i] == textWithTags[j]) {
+        // Match character
+        i++;
+      } else {
+        // Handle error: characters do not match
+        throw FormatException(
+            'Text does not match at index $i: ${text[i]} vs ${textWithTags[j]}');
+      }
+      j++;
+    }
+
+    if (i < index) {
+      // Handle error: index out of range
+      throw RangeError(
+          'Index out of range: $index (length of text is ${text.length})');
+    }
+
+    return j;
+  }
+
+  (String, int) stringDifference(String s1, String s2) {
+    final dmp = DiffMatchPatch();
+    final diffs = dmp.diff(s1, s2);
+    dmp.diffCleanupSemantic(diffs);
+    int operation = 0; // 1 for addition, -1 for deletion
+
+    final StringBuffer result = StringBuffer();
+    for (final diff in diffs) {
+      if (diff.operation == 1) {
+        // INSERT operation
+        operation = 1;
+        result.write(diff.text);
+      } else if (diff.operation == -1) {
+        // DELETE operation
+        operation = -1;
+        result.write(diff.text);
+      }
+    }
+    return (result.toString(), operation);
+  }
+
+  String insertCharAtPosition(
+      String original, String charToInsert, int position) {
+    if (position < 0 || position > original.length) {
+      throw ArgumentError('Position is out of bounds');
+    }
+
+    return original.substring(0, position) +
+        charToInsert +
+        original.substring(position);
+  }
+
+  String deleteCharAtPosition(String original, int position) {
+    // Check if the position is valid
+    if (position < 0 || position >= original.length) {
+      throw ArgumentError('Position is out of bounds');
+    }
+
+    // Delete the character at the specified position
+    return original.substring(0, position) + original.substring(position + 1);
+  }
+
+  String buildBackToString(List<TextSpan> spans) {
+    String result = '';
+    for (var span in spans) {
+      result += span.text ?? '';
+    }
+    return result + widget.text;
   }
 
   Widget _buildEditableText(BuildContext context, TextSpan textSpan) {
     final defaultTextStyle = DefaultTextStyle.of(context);
+    var children = getLastChildren(textSpan);
+
+    if (_controller == null) {
+      _controller =
+          TextSpanEditingController(textSpan: TextSpan(children: children));
+      originalText = _controller!.text;
+
+      _controller!.addListener(() {
+        var newStringIndex = _controller!.selection.extentOffset;
+        var originalIndex =
+            mapIndex(newStringIndex, originalText!, originalTextWithTags);
+        var diff = stringDifference(originalText!, _controller!.text);
+        var originalStringModified = diff.$1;
+        var operation = diff.$2;
+
+        if (operation == 1) {
+          originalTextWithTags = insertCharAtPosition(
+              originalTextWithTags, originalStringModified, originalIndex);
+        } else if (operation == -1) {
+          originalTextWithTags =
+              deleteCharAtPosition(originalTextWithTags, originalIndex);
+        }
+
+        if (operation != 0 && widget.onChange != null) {
+          widget.onChange!(originalTextWithTags);
+          print("RESULT:" + originalTextWithTags.toString());
+        }
+      });
+    }
+
+    // newController!.textSpan = (((textSpan.children!.first as TextSpan).children!.first as TextSpan).children);
     return customSelectable.EditableSelectableText.rich(
-      textSpan,
-      focusNode: _focusNode,
-      showCursor: _showCursor,
-      autofocus: _autofocus,
-      controller: controller!,
+      _controller!.textSpan,
+      focusNode: widget._focusNode,
+      showCursor: widget._showCursor,
+      autofocus: widget._autofocus,
+      controller: _controller!,
       // ignore: deprecated_member_use
-      contextMenuBuilder: _contextMenuBuilder,
-      selectionControls: _selectionControls,
-      selectionHeightStyle: _selectionHeightStyle!,
-      selectionWidthStyle: _selectionWidthStyle!,
-      onSelectionChanged: _onSelectionChanged,
-      magnifierConfiguration: _magnifierConfiguration,
-      cursorWidth: _cursorWidth!,
-      cursorHeight: _cursorHeight,
-      cursorRadius: _cursorRadius,
-      cursorColor: _cursorColor,
-      dragStartBehavior: _dragStartBehavior,
-      enableInteractiveSelection: _enableInteractiveSelection,
-      onTap: _onTap,
-      scrollPhysics: _scrollPhysics,
-      textWidthBasis: textWidthBasis ?? defaultTextStyle.textWidthBasis,
-      textHeightBehavior: textHeightBehavior ??
+      contextMenuBuilder: widget._contextMenuBuilder,
+      selectionControls: widget._selectionControls,
+      selectionHeightStyle: widget._selectionHeightStyle!,
+      selectionWidthStyle: widget._selectionWidthStyle!,
+      onSelectionChanged: widget._onSelectionChanged,
+      magnifierConfiguration: widget._magnifierConfiguration,
+      cursorWidth: widget._cursorWidth!,
+      cursorHeight: widget._cursorHeight,
+      cursorRadius: widget._cursorRadius,
+      cursorColor: widget._cursorColor,
+      dragStartBehavior: widget._dragStartBehavior,
+      enableInteractiveSelection: widget._enableInteractiveSelection,
+      onTap: widget._onTap,
+      scrollPhysics: widget._scrollPhysics,
+      textWidthBasis: widget.textWidthBasis ?? defaultTextStyle.textWidthBasis,
+      textHeightBehavior: widget.textHeightBehavior ??
           defaultTextStyle.textHeightBehavior ??
           DefaultTextHeightBehavior.maybeOf(context),
-      textAlign: textAlign ?? defaultTextStyle.textAlign ?? TextAlign.start,
-      textDirection: textDirection,
+      textAlign:
+          widget.textAlign ?? defaultTextStyle.textAlign ?? TextAlign.start,
+      textDirection: widget.textDirection,
       // softWrap
       // overflow
-      textScaleFactor: textScaleFactor ?? MediaQuery.textScaleFactorOf(context),
-      maxLines: maxLines ?? defaultTextStyle.maxLines,
+      textScaleFactor:
+          widget.textScaleFactor ?? MediaQuery.textScaleFactorOf(context),
+      maxLines: widget.maxLines ?? defaultTextStyle.maxLines,
       // locale
-      strutStyle: strutStyle,
-      semanticsLabel: _semanticsLabel,
+      strutStyle: widget.strutStyle,
+      semanticsLabel: widget._semanticsLabel,
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return CustomStyledText(
-      style: style,
-      newLineAsBreaks: newLineAsBreaks,
-      text: text,
-      tags: tags,
-      builder: selectable
+      style: widget.style,
+      newLineAsBreaks: widget.newLineAsBreaks,
+      text: widget.text,
+      tags: widget.tags,
+      builder: widget.selectable
           ? _buildSelectableText
-          : ((editable) ? _buildEditableText : _buildText),
+          : ((widget.editable) ? _buildEditableText : _buildText),
     );
   }
 }

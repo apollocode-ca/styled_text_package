@@ -30,6 +30,8 @@ class TextSpanEditingController extends TextEditingController {
 
   final TextSpan _textSpan;
 
+  TextSpan get textSpan => _textSpan;
+
   set textSpan(TextSpan newTextSpan) {
     if (_textSpan == newTextSpan) {
       return;
@@ -139,10 +141,8 @@ class TextSpanEditingController extends TextEditingController {
         initialText += child.text ?? "";
       }
     }
-    print(text);
     List<InlineSpan> copy =
         updateSpans(initialText, (_textSpan.children) ?? <InlineSpan>[], text);
-    print(copy);
     return TextSpan(
       style: style,
       children: copy,
