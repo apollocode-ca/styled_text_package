@@ -36,7 +36,6 @@ class TextSpanEditingController extends TextEditingController {
     if (_textSpan == newTextSpan) {
       return;
     }
-    print("set");
     value = value.copyWith(
       text: newTextSpan.toPlainText(includeSemanticsLabels: false),
       selection: const TextSelection.collapsed(offset: -1),

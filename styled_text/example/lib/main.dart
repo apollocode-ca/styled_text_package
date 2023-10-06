@@ -27,6 +27,7 @@ class DemoPage extends StatefulWidget {
 
 class _DemoPageState extends State<DemoPage> {
   String text = 'Test: editable <b>bold</b> text.';
+  bool initializing = false;
 
   void _alert(BuildContext context, {String text = 'Tapped'}) {
     showDialog<void>(
@@ -75,6 +76,22 @@ class _DemoPageState extends State<DemoPage> {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('StyledText Demo'),
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            setState(() {
+              initializing = true;
+            });
+            Future.delayed(Duration.zero).then((value) {
+              setState(() {
+                text += 'Test: editable <b>bold</b> text.';
+              });
+              setState(() {
+                initializing = false;
+              });
+            });
+          },
+          child: const Icon(Icons.refresh),
         ),
         body: Center(
           child: SingleChildScrollView(
@@ -272,23 +289,24 @@ class _DemoPageState extends State<DemoPage> {
 //                 ),
 
 //                 const Divider(height: 40),
-              Text(text),
+                Text(text),
                 // Editable text
-                StyledText.editable(
-                  text: text,
-                  showCursor: true,
-                  onChange: (value) {
-                    setState(() {
-                      print(value);
-                      text = value;
-                    });
-                  },
-                  tags: {
-                    'b': StyledTextTag(
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                  },
-                ),
+                if (!initializing)
+                  StyledText.editable(
+                    text: text,
+                    showCursor: true,
+                    onChange: (value) {
+                      setState(() {
+                        print(value);
+                        text = value;
+                      });
+                    },
+                    tags: {
+                      'b': StyledTextTag(
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                    },
+                  ),
 
                 const Divider(height: 40),
 

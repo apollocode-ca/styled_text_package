@@ -492,6 +492,7 @@ class _StyledTextState extends State<StyledText> {
         // Match character
         i++;
       } else {
+        return text.length - 1;
         // Handle error: characters do not match
         throw FormatException(
             'Text does not match at index $i: ${text[i]} vs ${textWithTags[j]}');
@@ -500,6 +501,8 @@ class _StyledTextState extends State<StyledText> {
     }
 
     if (i < index) {
+      return text.length - 1;
+
       // Handle error: index out of range
       throw RangeError(
           'Index out of range: $index (length of text is ${text.length})');
@@ -508,25 +511,21 @@ class _StyledTextState extends State<StyledText> {
     return j;
   }
 
-  (String, int) stringDifference(String s1, String s2) {
+  (String, String) stringDifference(String s1, String s2) {
     final dmp = DiffMatchPatch();
     final diffs = dmp.diff(s1, s2);
     dmp.diffCleanupSemantic(diffs);
-    int operation = 0; // 1 for addition, -1 for deletion
 
-    final StringBuffer result = StringBuffer();
+    final StringBuffer resultAdd = StringBuffer();
+    final StringBuffer resultMinus = StringBuffer();
     for (final diff in diffs) {
       if (diff.operation == 1) {
-        // INSERT operation
-        operation = 1;
-        result.write(diff.text);
+        resultAdd.write(diff.text);
       } else if (diff.operation == -1) {
-        // DELETE operation
-        operation = -1;
-        result.write(diff.text);
+        resultMinus.write(diff.text);
       }
     }
-    return (result.toString(), operation);
+    return (resultAdd.toString(), resultMinus.toString());
   }
 
   String insertCharAtPosition(
@@ -540,12 +539,16 @@ class _StyledTextState extends State<StyledText> {
         original.substring(position);
   }
 
-String deleteCharsAtPosition(String original, int position, int count) {
-  if (position < 0 || position >= original.length || count < 0 || position + count > original.length) {
-    throw ArgumentError('Invalid position or count');
+  String deleteCharsAtPosition(String original, int position, int count) {
+    if (position < 0 ||
+        position >= original.length ||
+        count < 0 ||
+        position + count > original.length) {
+      throw ArgumentError('Invalid position or count');
+    }
+    return original.substring(0, position) +
+        original.substring(position + count);
   }
-  return original.substring(0, position) + original.substring(position + count);
-}
 
   String buildBackToString(List<TextSpan> spans) {
     String result = '';
@@ -566,31 +569,38 @@ String deleteCharsAtPosition(String original, int position, int count) {
 
       _controller!.addListener(() {
         var newStringIndex = _controller!.selection.extentOffset;
-        var selectionWidth =
-            _controller!.selection.end - _controller!.selection.start;
-        if (selectionWidth == 0) {
-          selectionWidth = 1;
-        }
-        print(selectionWidth);
         var originalIndex =
             mapIndex(newStringIndex, originalText!, originalTextWithTags);
-        var diff = stringDifference(originalText!, _controller!.text);
-        var originalStringModified = diff.$1;
-        var operation = diff.$2;
+        // var selection = _controller!.selection;
+        // var base = mapIndex(
+        //     selection.baseOffset, _controller!.text, originalTextWithTags);
+        // var extent = mapIndex(
+        //     selection.extentOffset, _controller!.text, originalTextWithTags);
 
-        if (operation == 1) {
-          originalTextWithTags = insertCharAtPosition(
-              originalTextWithTags, originalStringModified, originalIndex - 1);
+        var diff = stringDifference(originalText!, _controller!.text);
+        var originalAddStringModified = diff.$1;
+        var originalMinusStringModified = diff.$2;
+
+        // var selectedText = originalTextWithTags.substring(base, extent);
+
+      
+        if (originalAddStringModified.isNotEmpty) {
+          originalTextWithTags = insertCharAtPosition(originalTextWithTags,
+              originalAddStringModified, originalIndex - 1);
           originalText = insertCharAtPosition(
-              originalText!, originalStringModified, newStringIndex - 1);
-        } else if (operation == -1) {
-          originalTextWithTags = deleteCharsAtPosition(
-              originalTextWithTags, originalIndex, selectionWidth);
-          originalText = deleteCharsAtPosition(
-              originalText!, newStringIndex, selectionWidth);
+              originalText!, originalAddStringModified, newStringIndex - 1);
         }
 
-        if (operation != 0 && widget.onChange != null) {
+        if (originalMinusStringModified.isNotEmpty) {
+          originalTextWithTags = deleteCharsAtPosition(originalTextWithTags,
+              originalIndex, originalMinusStringModified.length);
+          originalText = deleteCharsAtPosition(originalText!, newStringIndex,
+              originalMinusStringModified.length);
+        }
+
+        if ((originalAddStringModified.isNotEmpty ||
+                originalMinusStringModified.isNotEmpty) &&
+            widget.onChange != null) {
           widget.onChange!(originalTextWithTags);
         }
       });
